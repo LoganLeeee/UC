@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<!-- 
+ * overview: 
+ * author: Xinlin Li
+ * update:Fixed Choose Columns and ClearAll/SelectAll functions
+ * version:201900424-0641
+ * SheetJS for Excel file reading(https://github.com/SheetJS/js-xlsx/)
+  -->
+<!-- 
+  TODO 1:Update COLUMNS SELECT data after load a new file.
+  TODO 2:Fix axisExpandable function buggy when resize window.
+  TODO 3:Add select-All in column-select.
+  TODO 4:Click columns label to choose.
+  -->
+
+
+<html style="height: 100%">
+	<head>
+		<meta charset="utf-8">
+
+		<link rel="stylesheet" href="css/style.css">
+		<link href="css/fSelect.css" rel="stylesheet" type="text/css">
+		<script src="js/echarts-en.js"></script>
+		<script src="js/jquery.min.js"></script>
+		<script src="js/xlsx.full.min.js"></script>
+		<script src="js/demo.js"></script>
+		<script src="js/fSelect.js"></script>
+		<!-- <script src="js/alljs.js"></script> -->
+	</head>
+	<body style="height: 100%; margin: 0">
+		<div class="barner" style="width: 100%;  margin-top: 20px; margin-left: 20px;">
+			<input id="select_text" type="text" placeholder="Choose a .xlsx file readonly" />
+			<input id="select_file" type="file" />
+			<input id="select_btn" href="javascript:void(0);" type="button" value="Choose a .xlsx file" />
+			
+
+			<!-- Set a clear/select all series button -->
+			<select class="checkbox" multiple="multiple" id="ckb"></select>
+			<input class="hidden" id="gen" type="button" onclick="gen()" value="Generate" />
+
+
+		</div>
+		<div id="container" style=" height: 100%;"></div>
+		<script type="text/javascript">
+			// window.location.reload();	
+			function gen() {
+				/* 
+						To generate columns from choosen areas. 
+						*/
+				// console.log($('.checkbox').val() );
+				var schema1 = $('.checkbox').val(); // Read selected data as choosen column.
+				// myChart.clear;
+				schema1.unshift(localdata[0][0]);
+				[].concat(schema1); //set first column as "0".
+
+
+
+				var localdata1 = [schema1];
+				// console.log(schema1);
+				// console.log(JSON.stringify(schema1));
+				// console.log(localdata1);
+
+				for (k = 1, l = schema1.length; k < l; k++) {
+					var key = schema1[k];
+					// localdata1[0].push(key);
+					// console.log(key);
+					for (j = 1, len = localdata.length; j < len; j++) {
+						// localdata1[j][0].push(localdata[j][0]);
+						if (k === 1) {
+							localdata1.push([localdata[j][0]]);
+						} //??? done
+
+						for (i = 1, leng = localdata[0].length; i < leng; i++) {
+							// console.log(key);
+							// console.log(localdata[0][i]);
+							if (localdata[0][i] === key) {
+
+								localdata1[j].push(localdata[j][i]);
+								// console.log(localdata1[j]);
+								// console.log(JSON.stringify(localdata1));
+							}
+						}
+					}
+					// TODO:
+				}
+				// console.log(schema);
+				// console.log(JSON.stringify(localdata1));
+				getMultiBarChart(schema1, localdata1);
+			}
+
+			var wb;
+			var rABS = false;
+			var schema = [];
+			var column = [];
+			var localdata = [];
+			var selectArr;
+
+			function importf(obj) { //??
+				if (!obj.files) {
+					return;
+				}
+
+				var f = obj.files[0];
+				var reader = new FileReader();
+				reader.onload = function(e) {
+
+					myChart.clear;
+					var data = e.target.result;
+					if (rABS) {
+						wb = XLSX.read(btoa(fixdata(data)), { //????
+							type: 'base64'
+						});
+					} else {
+						wb = XLSX.read(data, {
+							type: 'binary'
+						});
+					}
+					// EXCEL json
+					var jsondata = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {
+						defval: '-'
+					});
+					//console.log(jsondata);
+					column = [];
+					localdata = [column];
+					for (var key in jsondata[0]) {
+						localdata[0].push(key);
+					}
+					for (var i = 0; i < jsondata.length; i++) {
+						var row = [];
+						localdata.push(row);
+						var x = 0;
+						for (var k in jsondata[i]) {
+							localdata[i + 1].push(jsondata[i][k]);
+							x++;
+							if (x === schema.length * i)
+								break;
+						}
+					}
+
+					schema = column;
+					// schema=$('.checkbox').val();
+					// schema = [column[0],column[1],column[2],column[3],column[4]]; //put column data into Schema
+
+					// 					console.log(localdata);
+					// 					console.log(schema);
+					// location.reload();
+					getMultiBarChart(schema, localdata);
+					$(function showcolumn() {
+						var ckb = document.getElementById("ckb");
+
+						for (var area in column) {
+							if (area > 0)
+								ckb.options.add(new Option(column[area], column[area]));
+						}
+						$('.checkbox').fSelect();
+					});
+					// showAllArea();
+					// showcolumn();//show checkbox of area
+
+					document.getElementById("gen").className = "gen";
+				};
+				if (rABS) {
+					reader.readAsArrayBuffer(f);
+				} else {
+					reader.readAsBinaryString(f);
+				}
+			}
+
+
+
+
+			var dom = document.getElementById("container");
+			var myChart = echarts.init(dom);
+			// var myChart = echarts.init(dom, null, {renderer: 'svg'});
+			var app = {};
+			option = null;
+
+			getMultiBarChart = function(schema, localdata) {
+
+				function makeParallelAxis(schema) {
+					var parallelAxis = [];
+					for (var i = 1; i < schema.length; i++) {
+						parallelAxis.push({
+							dim: i,
+							name: schema[i]
+						});
+					}
+					return parallelAxis;
+				}
+
+				function generateButton(localdata) {
+					var parallelButton = [];
+					for (var i = 1; i < localdata.length; i++) {
+						parallelButton.push({
+							name: localdata[i][0]
+						});
+					}
+					return parallelButton;
+				}
+
+				function generateData(localdata, index) {
+					var col = [];
+					var gendata = [col, col];
+					gendata[0] = localdata[0];
+					gendata[1] = localdata[index];
+					return gendata;
+				}
+
+				function makeSeriesData(localdata) {
+					var seriesData = [];
+					for (var i = 1; i < localdata.length; i++) {
+						seriesData.push({
+							name: localdata[i][0],
+							type: 'parallel',
+							smooth: true,
+							lineStyle: {
+								normal: {
+									color: '#577ceb',
+									width: 0.4,
+									opacity: 0.6
+								}
+							},
+							z: 100,
+							blendMode: 'lighter',
+							data: generateData(localdata, i)
+						});
+					}
+					return seriesData;
+				}
+				var expandWidth = Math.max(60, (($("#container").width() - 150) / Math.min(schema.length, 12)));
+				$(window).on('resize', function() {
+					myChart.resize();
+					// myChart.toolbox.feature.restore();
+					// myChart.option.toolbox.feature.restore;
+				});
+				// alert($("#container").width());
+				var icon1 =
+					'M896 64H128c-35.296 0-64 28.704-64 64v768c0 35.296 28.704 64 64 64h768c35.296 0 64-28.704 64-64V128c0-35.296-28.704-64-64-64zM128 896V128h768l0.064 768H128z';
+				var icon2 =
+					'path://M96 64h832a32 32 0 0 1 32 32v832a32 32 0 0 1-32 32H96a32 32 0 0 1-32-32V96a32 32 0 0 1 32-32z m648.64 244.032l-310.368 331.296-157.696-132.48a32 32 0 1 0-41.152 48.992l180.896 152a32 32 0 0 0 43.936-2.624L791.36 351.776a32 32 0 1 0-46.72-43.744z';
+				var iconCircleEmpty =
+					'M512 992C246.912 992 32 777.088 32 512 32 246.912 246.912 32 512 32c265.088 0 480 214.912 480 480 0 265.088-214.912 480-480 480z m0-64c229.76 0 416-186.24 416-416S741.76 96 512 96 96 282.24 96 512s186.24 416 416 416zM741.216 344a32 32 0 0 1 46.816 43.616l-315.296 338.208a32 32 0 0 1-43.968 2.688l-193.344-162.368a32 32 0 1 1 41.152-48.992l170.08 142.816 294.56-316z';
+				var iconCircleFull = 'M512 512m-448 0a448 448 0 1 0 896 0 448 448 0 1 0-896 0Z';
+
+				option = {
+					tooltip: {
+						// trigger: 'axis'
+						trigger: 'item',
+						// 						formatter: "{a} <br/>{b} : {c} ({d}%)"
+					},
+					toolbox: {
+						show: true,
+						left: 'left',
+						feature: {
+							myTool2: {
+								show: true,
+								title: 'ClearAll',
+								icon: iconCircleEmpty,
+								iconStyle: {
+									color: '#577ceb'
+								},
+								onclick: function() { // Set clear/select all series button function
+
+									if (option.toolbox.feature.myTool2.icon == iconCircleEmpty) {
+										option.toolbox.feature.myTool2.icon = iconCircleFull;
+										option.toolbox.feature.myTool2.title = 'SelectAll';
+										var val = false;
+									} else {
+										option.toolbox.feature.myTool2.icon = iconCircleEmpty;
+										option.toolbox.feature.myTool2.title = 'ClearAll';
+										var val = true;
+									}
+
+									var obj = {};
+									for (var key in selectArr) {
+										obj[selectArr[key].name] = val;
+									}
+									option.legend.selected = obj;
+									myChart.setOption(option, true);
+								}
+							},
+							// dataZoom: {
+							// 	yAxisIndex: 'none'
+							// },
+							dataView: {
+								// title: 'Raw Data',
+								readOnly: false,
+								/* 								optionToContent: function(opt) {
+																		var axisData = opt.xAxis[0].data;
+																		var series = opt.series;
+																		var table = '<table style="width:100%;text-align:center"><tbody><tr>'
+																					 + '<td>Ê±¼ä</td>'
+																					 + '<td>' + series[0].name + '</td>'
+																					 + '<td>' + series[1].name + '</td>'
+																					 + '</tr>';
+																		for (var i = 0, l = axisData.length; i < l; i++) {
+																			table += '<tr>'
+																					 + '<td>' + axisData[i] + '</td>'
+																					 + '<td>' + series[0].data[i] + '</td>'
+																					 + '<td>' + series[1].data[i] + '</td>'
+																					 + '</tr>';
+																		}
+																		table += '</tbody></table>';
+																		return table;
+																	} */
+							},
+							// magicType: {type: ['line', 'bar']},
+							restore: {
+								// title: 'Restore'
+							},
+							saveAsImage: {
+								// title: 'Save as Image'
+							}
+						}
+					},
+					grid: {
+						containLabel: true
+					},
+
+					legend: {
+						type: 'scroll',
+						top: 35,
+						bottom: '30%',
+						left: 'left',
+						orient: 'vertical',
+						data: generateButton(localdata),
+						selected: {},
+						icon: 'circle',
+						textStyle: {
+							color: 'rgba(255,255,255,0.5)'
+						},
+						selectedMode: 'multiple',
+						formatter: function(name) {
+							// console.log(name);
+							return echarts.format.truncateText(name.replace("CSMA ", ""), 120, '14px Microsoft Yahei', '');
+
+						},
+						tooltip: {
+
+							show: true,
+							trigger: 'item',
+							// formatter: "{a} <br/>{b} : {c} ({d}%)"
+
+						},
+						pageTextStyle: {
+							color: 'rgba(255,255,255,0.5)'
+						}
+					},
+
+					parallelAxis: makeParallelAxis(schema),
+
+					parallel: {
+						// top:'10%',
+						top: 35,
+						left: 130,
+						right: 40,
+						bottom: '40%',
+						axisExpandable: true,
+						// axisExpandCenter: 15,
+						// axisExpandCenter: Math.floor(schema.length*0.05),//define expand center based on column number
+						axisExpandCenter: 0,
+						axisExpandCount: 10,
+						axisExpandWidth: expandWidth, //define expand width based on column number
+						axisExpandTriggerOn: 'mousemove',
+
+						z: 100,
+						parallelAxisDefault: {
+							type: 'value',
+							nameLocation: 'start',
+							nameRotate: 25,
+							// nameLocation: 'end',
+							nameTextStyle: {
+								fontSize: 12
+							},
+							nameTruncate: {
+								maxWidth: 170
+							},
+							// boundaryGap: ['20%', '20%'],
+							nameGap: 20,
+							splitNumber: 3,
+							tooltip: {
+								show: true
+							},
+							axisLine: {
+								// show: false,
+								lineStyle: {
+									width: 1,
+									color: 'rgba(255,255,255,0.3)'
+								}
+							},
+							axisTick: {
+								show: false
+							},
+							splitLine: {
+								show: false
+							},
+							z: 100
+						}
+					},
+					series: makeSeriesData(localdata)
+
+				};
+
+				// console.log(option.visualMap.inRange[]);
+				myChart.setOption(option, true);
+				$(window).on('resize', function() {
+					myChart.resize();
+				});
+
+
+
+
+				selectArr = myChart.getOption().legend[0].data;
+
+				//if (option && typeof option === "object") {
+				// myChart.setOption(option, true);
+			};
+		</script>
+		<!-- <script src="js/alljs.js"></script> -->
+		<p class="footer"> <a>Made by Xinlin Li 201900421-1451</a>. Thanks to Prof.Dat Tran for his tutorial, also <a href="https://www.jb51.net/article/149290.htm">OnlineExample</a>
+			(and surport by Baidu, <a href="https://www.echartsjs.com/examples/editor.html?c=map-parallel-prices">Echarts</a>!.
+			For further <a href="https://www.cnblogs.com/bubugao/p/js4.html">improvnment</a>.)
+		</p>
+	</body>
+</html>
