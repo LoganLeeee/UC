@@ -47,19 +47,13 @@
 				/* 
 						To generate columns from choosen areas. 
 						*/
-				// console.log($('.checkbox').val() );
+
 				var schema1 = $('.checkbox').val(); // Read selected data as choosen column.
-				// myChart.clear;
+
 				schema1.unshift(localdata[0][0]);
 				[].concat(schema1); //set first column as "0".
 
-
-
 				var localdata1 = [schema1];
-				// console.log(schema1);
-				// console.log(JSON.stringify(schema1));
-				// console.log(localdata1);
-
 				for (k = 1, l = schema1.length; k < l; k++) {
 					var key = schema1[k];
 					// localdata1[0].push(key);
@@ -71,20 +65,14 @@
 						} //??? done
 
 						for (i = 1, leng = localdata[0].length; i < leng; i++) {
-							// console.log(key);
-							// console.log(localdata[0][i]);
 							if (localdata[0][i] === key) {
-
 								localdata1[j].push(localdata[j][i]);
-								// console.log(localdata1[j]);
-								// console.log(JSON.stringify(localdata1));
 							}
 						}
 					}
 					// TODO:
 				}
-				// console.log(schema);
-				// console.log(JSON.stringify(localdata1));
+
 				getMultiBarChart(schema1, localdata1);
 			}
 
@@ -99,8 +87,11 @@
 				if (!obj.files) {
 					return;
 				}
-
 				var f = obj.files[0];
+				if (!/\.xlsx$/g.test(f.name)) {
+						alert('Only .xlsx file support!');
+						return;
+					}
 				var reader = new FileReader();
 				reader.onload = function(e) {
 
@@ -138,12 +129,7 @@
 					}
 
 					schema = column;
-					// schema=$('.checkbox').val();
-					// schema = [column[0],column[1],column[2],column[3],column[4]]; //put column data into Schema
-
-					// 					console.log(localdata);
-					// 					console.log(schema);
-					// location.reload();
+					
 					getMultiBarChart(schema, localdata);
 					$(function showcolumn() {
 						var ckb = document.getElementById("ckb");
@@ -279,37 +265,13 @@
 									myChart.setOption(option, true);
 								}
 							},
-							// dataZoom: {
-							// 	yAxisIndex: 'none'
-							// },
+	
 							dataView: {
-								// title: 'Raw Data',
 								readOnly: false,
-								/* 								optionToContent: function(opt) {
-																		var axisData = opt.xAxis[0].data;
-																		var series = opt.series;
-																		var table = '<table style="width:100%;text-align:center"><tbody><tr>'
-																					 + '<td>Ê±¼ä</td>'
-																					 + '<td>' + series[0].name + '</td>'
-																					 + '<td>' + series[1].name + '</td>'
-																					 + '</tr>';
-																		for (var i = 0, l = axisData.length; i < l; i++) {
-																			table += '<tr>'
-																					 + '<td>' + axisData[i] + '</td>'
-																					 + '<td>' + series[0].data[i] + '</td>'
-																					 + '<td>' + series[1].data[i] + '</td>'
-																					 + '</tr>';
-																		}
-																		table += '</tbody></table>';
-																		return table;
-																	} */
-							},
-							// magicType: {type: ['line', 'bar']},
+							},						
 							restore: {
-								// title: 'Restore'
 							},
-							saveAsImage: {
-								// title: 'Save as Image'
+							saveAsImage: {								
 							}
 						}
 					},
