@@ -215,9 +215,7 @@
 				}
 				var expandWidth = Math.max(60, (($("#container").width() - 150) / Math.min(schema.length, 12)));
 				$(window).on('resize', function() {
-					myChart.resize();
-					// myChart.toolbox.feature.restore();
-					// myChart.option.toolbox.feature.restore;
+					myChart.resize();				
 				});
 				// alert($("#container").width());
 				var icon1 =
@@ -233,6 +231,17 @@
 						// trigger: 'axis'
 						trigger: 'item',
 						// 						formatter: "{a} <br/>{b} : {c} ({d}%)"
+					},
+					title: {
+						text: 'Visual and Decision Analytics of Mental Healthcare Services',
+						// subtext: 'data from macrofocus',
+						
+						left: 'center',
+						top: 5,
+						itemGap: 0,
+						textStyle: {
+							color: '#eee'
+						}
 					},
 					toolbox: {
 						show: true,
