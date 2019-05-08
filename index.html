@@ -214,6 +214,7 @@
 							name: schema[i]
 						});
 					}
+					
 					return parallelAxis;
 				}
 		
@@ -246,9 +247,11 @@
 								normal: {
 									color: '#577ceb',
 									width: 0.4,
-									opacity: 0.6
-								}
-							},
+									opacity: 0.7,			
+										},						
+									},
+									activeOpacity:1,
+									inactiveOpacity:0.1,
 							z: 100,
 							blendMode: 'lighter',
 							data: generateData(localdata, i)

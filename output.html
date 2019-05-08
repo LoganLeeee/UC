@@ -388,6 +388,7 @@
 						seriesData.push({
 							// coordinateSystem:'singleAxis',
 							type: 'scatter',
+							activeOpacity: 1,
 
 							data: distanceData,
 							// data:generateData(localdata, 0),
@@ -403,9 +404,11 @@
 								normal: {
 									color: '#577ceb',
 									width: 0.4,
-									opacity: 0.6
-								}
+									opacity: 0.7,			
+								},						
 							},
+							activeOpacity:1,
+							inactiveOpacity:0.1,
 							z: 100,
 							blendMode: 'lighter',
 							data: generateData(localdata, i)
@@ -567,6 +570,7 @@
 						right: 65,
 						bottom: '30%',
 						axisExpandable: true,
+
 						// axisExpandCenter: 15,
 						// axisExpandCenter: Math.floor(schema.length*0.05),//define expand center based on column number
 						axisExpandCenter: 0,
