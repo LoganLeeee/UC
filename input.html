@@ -1,17 +1,20 @@
 <!DOCTYPE html>
 <!-- 
- * overview: 
+ * overview: This is for Task B: Plot each parallel graph for input ,
+				and calculate distance between choosen and others as a new axis in parallel graph.
  * author: Xinlin Li
  * update:Get input and output data, calculate Distance,show distance axis at the end of parallel
- * version:201900508-1722
+ * version:201900505-0521
  * SheetJS for Excel file reading(https://github.com/SheetJS/js-xlsx/)
  * sumoselect for Select-Checkbox (https://github.com/HemantNegi/jquery.sumoselect)
   -->
 <!-- 
   TODO 1:Update COLUMNS SELECT data after load a new file.
-  TODO 2:Fix axisExpandable function buggy when resize window.
+  DONE 2:Fix axisExpandable function buggy when resize window.
   TODO 3:Add select-All in column-select.
   TODO 4:Click columns label to choose.
+  TODO 5:Add more than two parallel graphs on one page
+  TODO 6:Add a scatter graph as dots of values on Distance axis on top of parallel.
   -->
 
 
@@ -20,27 +23,25 @@
 		<meta charset="utf-8">
 
 		<link rel="stylesheet" href="css/style.css">
-		
 		<script src="js/echarts-en.js"></script>
 		<script src="js/jquery.min.js"></script>
 		<script src="js/xlsx.full.min.js"></script>
-		<script src="js/demo.js"></script>
-		
+		<script src="js/demo.js"></script>		
 		<script src="js/jquery.sumoselect.min.js"></script>
 		<link href="css/sumoselect.min.css" rel="stylesheet" />
 		<!-- <script src="js/alljs.js"></script> -->
 	</head>
 	<body style="height: 100%; margin: 0">
 		
-		<nav>
+				<nav>
 			<ul>
 				<li>
-				    <a href="index.html" style="background: rgba(255, 255, 255, 0.1);">
+				    <a href="index.html" >
 				        All Data
 				    </a>
 				</li>
 				<li>
-				    <a href="input.html">
+				    <a href="input.html" style="background: rgba(255, 255, 255, 0.1);">
 				        Input
 				    </a>
 				</li>
@@ -59,7 +60,7 @@
 
 
 			<!-- Set a clear/select all series button -->
-			<!-- <select class="select" multiple=" " id="selectS"></select> -->
+			<select class="select" id="selectS"></select>
 			<select class="checkbox" multiple="multiple" id="ckb"></select>
 			<input class="hidden" id="gen" type="button" onclick="gen()" value="Generate" />
 
@@ -74,67 +75,119 @@
 						*/
 				// console.log($('.checkbox').val() );
 				var schema1 = $('.checkbox').val(); // Read selected data as choosen column.
+				var standard = $('.select').val();
 				// myChart.clear;
-				schema1.unshift(localdata[0][0]);
-				[].concat(schema1); //set first column as "0".
-		
-		
-		
-				var localdata1 = [schema1];
-				// console.log(schema1);
+				// console.log(localdata[0][0]);
 				// console.log(JSON.stringify(schema1));
-				// console.log(localdata1);
-		
+				schema1.unshift(localdata[0][0]);
+
+				[].concat(schema1);
+
+				//set first column as "0".
+
+
+
+				var localdata1 = [schema1];
+
+
 				for (k = 1, l = schema1.length; k < l; k++) {
 					var key = schema1[k];
 					// localdata1[0].push(key);
 					// console.log(key);
 					for (j = 1, len = localdata.length; j < len; j++) {
 						// localdata1[j][0].push(localdata[j][0]);
-						if (k === 1) {
+						if (k == 1) {
 							localdata1.push([localdata[j][0]]);
 						} //??? done
-		
+
 						for (i = 1, leng = localdata[0].length; i < leng; i++) {
 							// console.log(key);
 							// console.log(localdata[0][i]);
-							if (localdata[0][i] === key) {
-		
+							if (localdata[0][i] == key) {
+
 								localdata1[j].push(localdata[j][i]);
 								// console.log(localdata1[j]);
 								// console.log(JSON.stringify(localdata1));
 							}
 						}
+
 					}
+					// console.log(JSON.stringify(localdata1));
 					// TODO:
 				}
+
+				var stanArea = [];
+
+				for (i = 1, l = localdata1.length; i < l; i++) {
+					if (localdata1[i][0] == standard) {
+						// console.log('Match!');
+						stanArea = localdata1[i].concat();
+						// console.log(stanArea);
+						break;
+					}
+				}
+				for (i = 1, l = localdata1.length; i < l; i++) {
+
+					var dist = 0;
+					// console.log(stanArea,i);
+					for (j = 1, len = stanArea.length; j < len; j++) {
+						// console.log(stanArea,i,j);
+						// console.log(len,j,stanArea[j],localdata1[i][j]);
+						// console.log(chaP(stanArr[i],variArr[i]));
+						dist += chaP(stanArea[j], localdata1[i][j]);
+
+					}
+					// console.log(dist);					 
+					localdata1[i].push(Math.sqrt(dist));
+					// localdata2[i].push(i);
+					// console.log(stanArea,i,j);
+
+					// console.log(distance(stanArea,localdata1[i]));
+				};
+
+				function chaP(stan, varible) {
+					// console.log((stan-varible));
+					return Math.pow((stan - varible), 2);
+				}
+
+				function distance(stanArr, variArr) {
+					var dist = 0;
+					for (i = 1, l = stanArr.length; i < l; i++) {
+						// console.log(stanArr[i],variArr[i]);
+						// console.log(cha2(stanArr[i],variArr[i]));
+						dist += chaP(stanArr[i], variArr[i]);
+					}
+					console.log(dist);
+					return Math.sqrt(dist);
+				}
+				schema1.push('Distance');
 				// console.log(schema);
 				// console.log(JSON.stringify(localdata1));
 				getMultiBarChart(schema1, localdata1);
 			}
-		
+
 			var wb;
 			var rABS = false;
 			var schema = [];
 			var column = [];
 			var localdata = [];
 			var selectArr;
-		
+
 			function importf(obj) { //??
 				if (!obj.files) {
 					return;
 				}
 				var f = obj.files[0];
 				if (!/\.xlsx$/g.test(f.name)) { // check if it is a xlsx file.
-						alert('Only .xlsx file support!');
-						return;
-					}
+					alert('Only .xlsx file support!');
+					return;
+				}
 				var reader = new FileReader();
 				reader.onload = function(e) {
-		
+
 					myChart.clear;
 					var data = e.target.result;
-					
+					// console.log(e.target.src);
 					if (rABS) {
 						wb = XLSX.read(btoa(fixdata(data)), { //????
 							type: 'base64'
@@ -151,41 +204,96 @@
 					//console.log(jsondata);
 					column = [];
 					localdata = [column];
+					// console.log(column);
+					outputArea = ['UR2disch', 'UR2stay', 'UR2readm', 'Outpatient care', 'Satisfaction', 'UOcPrev', 'UOcInc',
+						'UOcFreq'
+					];
+					localdataOut = [
+						[]
+					];
+					// standard=['adam'];
+					function notInArray(arr, value) {
+						for (var i = 0; i < arr.length; i++) {
+							// console.log(value,arr[i]);
+							if (value == arr[i]) {
+								return false;
+							}
+						}
+						return true;
+					};
 					for (var key in jsondata[0]) {
-						localdata[0].push(key);
-					}
-					for (var i = 0; i < jsondata.length; i++) {
-						var row = [];
-						localdata.push(row);
-						var x = 0;
-						for (var k in jsondata[i]) {
-							localdata[i + 1].push(jsondata[i][k]);
-							x++;
-							if (x === schema.length * i)
-								break;
+						if (notInArray(outputArea, key)) {
+							localdata[0].push(key);
+
+						} else {
+							localdataOut[0].push(key);
 						}
 					}
-		
+					localdataOut[0].unshift(localdata[0][0]);
+					// outputArea=localdataOut[0];
+					// console.log(JSON.stringify(localdata));
+					// console.log(JSON.stringify(localdataOut));
+
+					for (var i = 0; i < jsondata.length; i++) {
+						var row = [];
+						var rowOut = [];
+						localdataOut.push(rowOut);
+						localdata.push(row);
+						// console.log(JSON.stringify(localdata));
+						// console.log(outputArea);
+						for (var k in jsondata[i]) {
+							if (notInArray(outputArea, k)) {
+								// console.log(k);
+								localdata[i + 1].push(jsondata[i][k]);
+							} else {
+								// console.log(jsondata[i][k]);
+								localdataOut[i + 1].push(jsondata[i][k]);
+
+							}
+						}
+						localdataOut[i+1].unshift(localdata[i+1][0]);
+					};
+					// console.log(JSON.stringify(localdataOut));
+					// console.log(localdataOut);
+					// console.log(localdata);
+					outputArea=localdataOut[0];
+
 					schema = column;
-					// schema=$('.checkbox').val();
-					// schema = [column[0],column[1],column[2],column[3],column[4]]; //put column data into Schema
-		
-					// 					console.log(localdata);
-					// 					console.log(schema);
-					// location.reload();
+					// getMultiBarChart(outputArea, localdataOut);
 					getMultiBarChart(schema, localdata);
+
+
+
 					$(function showcolumn() {
 						var ckb = document.getElementById("ckb");
-		
+
 						for (var area in column) {
 							if (area > 0)
 								ckb.options.add(new Option(column[area], column[area]));
 						}
-						$('.checkbox').SumoSelect();
+						$('.checkbox').SumoSelect({
+							csvDispCount: 3,
+							search: true,
+							searchText: 'Enter to search.' /* , selectAll:true */
+						});
+
+					});
+					$(function showarea() {
+						var selectS = document.getElementById("selectS");
+
+						for (i = 0, l = localdata.length; i < l; i++) {
+							if (i > 0)
+								selectS.options.add(new Option(localdata[i][0], localdata[i][0]));
+						}
+						$('.select').SumoSelect({
+							csvDispCount: 3,
+							search: true,
+							searchText: 'Enter to search.'
+						});
 					});
 					// showAllArea();
 					// showcolumn();//show checkbox of area
-		
+
 					document.getElementById("gen").className = "gen";
 				};
 				if (rABS) {
@@ -194,18 +302,18 @@
 					reader.readAsBinaryString(f);
 				}
 			}
-		
-		
-		
-		
+
+
+
+
 			var dom = document.getElementById("container");
 			var myChart = echarts.init(dom);
 			// var myChart = echarts.init(dom, null, {renderer: 'svg'});
 			var app = {};
 			option = null;
-		
+
 			getMultiBarChart = function(schema, localdata) {
-		
+
 				function makeParallelAxis(schema) {
 					var parallelAxis = [];
 					for (var i = 1; i < schema.length; i++) {
@@ -216,7 +324,7 @@
 					}
 					return parallelAxis;
 				}
-		
+
 				function generateButton(localdata) {
 					var parallelButton = [];
 					for (var i = 1; i < localdata.length; i++) {
@@ -226,7 +334,7 @@
 					}
 					return parallelButton;
 				}
-		
+
 				function generateData(localdata, index) {
 					var col = [];
 					var gendata = [col, col];
@@ -234,7 +342,7 @@
 					gendata[1] = localdata[index];
 					return gendata;
 				}
-		
+
 				function makeSeriesData(localdata) {
 					var seriesData = [];
 					for (var i = 1; i < localdata.length; i++) {
@@ -270,17 +378,17 @@
 				var iconCircleEmpty =
 					'M512 992C246.912 992 32 777.088 32 512 32 246.912 246.912 32 512 32c265.088 0 480 214.912 480 480 0 265.088-214.912 480-480 480z m0-64c229.76 0 416-186.24 416-416S741.76 96 512 96 96 282.24 96 512s186.24 416 416 416zM741.216 344a32 32 0 0 1 46.816 43.616l-315.296 338.208a32 32 0 0 1-43.968 2.688l-193.344-162.368a32 32 0 1 1 41.152-48.992l170.08 142.816 294.56-316z';
 				var iconCircleFull = 'M512 512m-448 0a448 448 0 1 0 896 0 448 448 0 1 0-896 0Z';
-		
+
 				option = {
 					tooltip: {
 						// trigger: 'axis'
 						trigger: 'item',
 						// 						formatter: "{a} <br/>{b} : {c} ({d}%)"
 					},
-					 title: {
-						text: 'All Data',
+					title: {
+						text: 'Input',
 						// subtext: 'data from macrofocus',
-						
+
 						left: 'center',
 						top: 5,
 						itemGap: 0,
@@ -300,7 +408,7 @@
 									color: '#577ceb',
 								},
 								onclick: function() { // Set clear/select all series button function
-		
+
 									if (option.toolbox.feature.myTool2.icon == iconCircleEmpty) {
 										option.toolbox.feature.myTool2.icon = iconCircleFull;
 										option.toolbox.feature.myTool2.title = 'SelectAll';
@@ -310,7 +418,7 @@
 										option.toolbox.feature.myTool2.title = 'ClearAll';
 										var val = true;
 									}
-		
+
 									var obj = {};
 									for (var key in selectArr) {
 										obj[selectArr[key].name] = val;
@@ -319,20 +427,18 @@
 									myChart.setOption(option, true);
 								}
 							},
-							
-							dataView: {								
-								readOnly: false,								
-							},							
-							restore: {								
+
+							dataView: {
+								readOnly: false,
 							},
-							saveAsImage: {								
-							}
+							restore: {},
+							saveAsImage: {}
 						}
 					},
 					grid: {
 						containLabel: true
 					},
-		
+
 					legend: {
 						type: 'scroll',
 						top: 35,
@@ -349,22 +455,22 @@
 						formatter: function(name) {
 							// console.log(name);
 							return echarts.format.truncateText(name.replace("CSMA ", ""), 120, '14px Microsoft Yahei', '');
-		
+
 						},
 						tooltip: {
-		
+
 							show: true,
 							trigger: 'item',
 							// formatter: "{a} <br/>{b} : {c} ({d}%)"
-		
+
 						},
 						pageTextStyle: {
 							color: 'rgba(255,255,255,0.5)'
 						}
 					},
-		
+
 					parallelAxis: makeParallelAxis(schema),
-		
+
 					parallel: {
 						// top:'10%',
 						top: 45,
@@ -378,7 +484,7 @@
 						axisExpandCount: 10,
 						axisExpandWidth: expandWidth, //define expand width based on column number
 						axisExpandTriggerOn: 'mousemove',
-		
+
 						z: 100,
 						parallelAxisDefault: {
 							type: 'value',
@@ -414,20 +520,20 @@
 						}
 					},
 					series: makeSeriesData(localdata)
-		
+
 				};
-		
+
 				// console.log(option.visualMap.inRange[]);
 				myChart.setOption(option, true);
 				$(window).on('resize', function() {
 					myChart.resize();
 				});
-		
-		
-		
-		
+
+
+
+
 				selectArr = myChart.getOption().legend[0].data;
-		
+
 				//if (option && typeof option === "object") {
 				// myChart.setOption(option, true);
 			};
