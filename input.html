@@ -4,7 +4,7 @@
 				and calculate distance between choosen and others as a new axis in parallel graph.
  * author: Xinlin Li
  * update:Get input and output data, calculate Distance,show distance axis at the end of parallel
- * version:201900505-0521
+ * version:201900509-0313
  * SheetJS for Excel file reading(https://github.com/SheetJS/js-xlsx/)
  * sumoselect for Select-Checkbox (https://github.com/HemantNegi/jquery.sumoselect)
   -->
@@ -14,7 +14,7 @@
   TODO 3:Add select-All in column-select.
   TODO 4:Click columns label to choose.
   TODO 5:Add more than two parallel graphs on one page
-  TODO 6:Add a scatter graph as dots of values on Distance axis on top of parallel.
+  DONE 6:Add a scatter graph as dots of values on Distance axis on top of parallel.
   -->
 
 
@@ -26,33 +26,33 @@
 		<script src="js/echarts-en.js"></script>
 		<script src="js/jquery.min.js"></script>
 		<script src="js/xlsx.full.min.js"></script>
-		<script src="js/demo.js"></script>		
+		<script src="js/demo.js"></script>
 		<script src="js/jquery.sumoselect.min.js"></script>
 		<link href="css/sumoselect.min.css" rel="stylesheet" />
 		<!-- <script src="js/alljs.js"></script> -->
 	</head>
 	<body style="height: 100%; margin: 0">
-		
-				<nav>
+
+		<nav>
 			<ul>
 				<li>
-				    <a href="index.html" >
-				        All Data
-				    </a>
+					<a href="index.html">
+						All Data
+					</a>
 				</li>
 				<li>
-				    <a href="input.html" style="background: rgba(255, 255, 255, 0.1);">
-				        Input
-				    </a>
+					<a href="input.html" style="background: rgba(255, 255, 255, 0.1);">
+						Input
+					</a>
 				</li>
 				<li>
-				    <a href="output.html">
-				        Output
-				    </a>
+					<a href="output.html">
+						Output
+					</a>
 				</li>
 			</ul>
 		</nav>
-		
+
 		<div class="barner" style="width: 100%;  margin-top: 20px; margin-left: 20px;">
 			<input id="select_text" type="text" placeholder="Choose a .xlsx file readonly" />
 			<input id="select_file" type="file" />
@@ -117,6 +117,7 @@
 				}
 
 				var stanArea = [];
+				var distanceData = [];
 
 				for (i = 1, l = localdata1.length; i < l; i++) {
 					if (localdata1[i][0] == standard) {
@@ -138,7 +139,10 @@
 
 					}
 					// console.log(dist);					 
-					localdata1[i].push(Math.sqrt(dist));
+					localdata1[i].push(Math.sqrt(dist), localdata1[i][0]);
+					distanceData.push([ /* localdata1[i][0], */ 0, (i + .5) / (localdata1.length), Math.sqrt(dist), localdata1[i]
+						[0]
+					]);
 					// localdata2[i].push(i);
 					// console.log(stanArea,i,j);
 
@@ -157,13 +161,15 @@
 						// console.log(cha2(stanArr[i],variArr[i]));
 						dist += chaP(stanArr[i], variArr[i]);
 					}
-					console.log(dist);
+					// console.log(dist);
 					return Math.sqrt(dist);
 				}
 				schema1.push('Distance');
+				schema1.push('Area');
 				// console.log(schema);
 				// console.log(JSON.stringify(localdata1));
-				getMultiBarChart(schema1, localdata1);
+				getMultiBarChart(schema1, localdata1, distanceData);
+				// console.log(JSON.stringify(distanceData));
 			}
 
 			var wb;
@@ -251,12 +257,12 @@
 
 							}
 						}
-						localdataOut[i+1].unshift(localdata[i+1][0]);
+						localdataOut[i + 1].unshift(localdata[i + 1][0]);
 					};
 					// console.log(JSON.stringify(localdataOut));
 					// console.log(localdataOut);
 					// console.log(localdata);
-					outputArea=localdataOut[0];
+					outputArea = localdataOut[0];
 
 					schema = column;
 					// getMultiBarChart(outputArea, localdataOut);
@@ -312,16 +318,40 @@
 			var app = {};
 			option = null;
 
-			getMultiBarChart = function(schema, localdata) {
+			getMultiBarChart = function(schema, localdata, distanceData = null) {
 
 				function makeParallelAxis(schema) {
 					var parallelAxis = [];
 					for (var i = 1; i < schema.length; i++) {
-						parallelAxis.push({
-							dim: i,
-							name: schema[i]
-						});
+						if (distanceData != null && i == schema.length - 1) {
+							// console.log(JSON.stringify(schema[i]));
+							function tooMany(name) {
+								// console.log($("#container").height());
+								if ($("#container").height()/name.length < 30) {
+									return false
+								} else return true;
+							}
+							parallelAxis.push({
+								dim: i,
+								type: 'category',
+								axisLabel: {
+									show: tooMany(localdata),
+									inside: true,
+									formatter: function(name) {
+										return echarts.format.truncateText(name.replace("CSMA ", ""), 120, '4px Microsoft Yahei', '');
+
+									},
+								},
+								name: schema[i]
+							});
+						} else {
+							parallelAxis.push({
+								dim: i,
+								name: schema[i]
+							});
+						}
 					}
+
 					return parallelAxis;
 				}
 
@@ -343,8 +373,18 @@
 					return gendata;
 				}
 
-				function makeSeriesData(localdata) {
+				function makeSeriesData(localdata, distanceData) {
 					var seriesData = [];
+					if (distanceData != null) {
+						seriesData.push({
+							// coordinateSystem:'singleAxis',
+							type: 'scatter',
+
+							data: distanceData,
+							// data:generateData(localdata, 0),
+							symbolSize: 4,
+						});
+					};
 					for (var i = 1; i < localdata.length; i++) {
 						seriesData.push({
 							name: localdata[i][0],
@@ -384,6 +424,37 @@
 						// trigger: 'axis'
 						trigger: 'item',
 						// 						formatter: "{a} <br/>{b} : {c} ({d}%)"
+						formatter: function(params) {
+							return params.value[3] + '<br/>' + params.value[2];
+						}
+					},
+
+					xAxis: {
+						show: false,
+						gridIndex: 1,
+						type: 'category',
+						axisLine: {
+							onZero: true,
+						},
+					},
+					yAxis: {
+
+						show: false,
+						gridIndex: 1,
+						position: 'right',
+						type: 'value',
+						axisLine: {
+							lineStyle: {
+								width: 1,
+								color: 'rgba(255,255,255,0.3)'
+							},
+							onZero: true,
+						},
+					},
+					singleAxis: {
+						type: 'value',
+						orient: 'vertical',
+						// data:[],
 					},
 					title: {
 						text: 'Input',
@@ -435,14 +506,14 @@
 							saveAsImage: {}
 						}
 					},
-					grid: {
-						containLabel: true
-					},
+					// grid: {
+					// 	containLabel: true
+					// },
 
 					legend: {
 						type: 'scroll',
 						top: 35,
-						bottom: '30%',
+						bottom: '20%',
 						left: 'left',
 						orient: 'vertical',
 						data: generateButton(localdata),
@@ -470,13 +541,22 @@
 					},
 
 					parallelAxis: makeParallelAxis(schema),
+					grid: [{},
+						{
+							width: '3px',
+							top: 45,
+							right: 60,
+							bottom: '30%',
+						},
+					],
 
 					parallel: {
-						// top:'10%',
+						top: '10%',
 						top: 45,
 						left: 130,
-						right: 40,
-						bottom: '40%',
+						right: 65,
+						bottom: '30%',
+						gridIndex: 0,
 						axisExpandable: true,
 						// axisExpandCenter: 15,
 						// axisExpandCenter: Math.floor(schema.length*0.05),//define expand center based on column number
@@ -519,7 +599,7 @@
 							z: 100
 						}
 					},
-					series: makeSeriesData(localdata)
+					series: makeSeriesData(localdata, distanceData)
 
 				};
 
